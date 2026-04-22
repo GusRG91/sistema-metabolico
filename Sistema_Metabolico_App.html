@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0c0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Sistema Metabólico</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #0a0c0f; --s1: #111418; --s2: #181c22;
+  --border: #1e2228; --border2: #252a34;
+  --acc: #c8f040; --acc-dim: #607030; --acc-bg: #1a2d10; --acc-border: #3a5020;
+  --text: #eef0f4; --muted: #606876; --muted2: #3a3e48;
+  --blue: #6ab0ff; --orange: #ff8050;
+}
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; min-height: 100vh; }
+.page { display: none; min-height: 100vh; padding-bottom: 40px; }
+.page.active { display: block; }
+
+/* HEADER */
+.hdr { padding: 20px 18px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+.hdr-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--acc); }
+.hdr-sub { font-size: 11px; color: var(--muted); font-weight: 300; margin-top: 3px; }
+.badge { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 10px; border-radius: 20px; background: var(--acc); color: var(--bg); }
+.badge.other { background: var(--s2); color: var(--muted); }
+
+/* AUTH BANNER */
+.auth-banner { margin: 12px 18px 0; background: #101828; border: 1px solid #203060; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.auth-text { font-size: 12px; color: var(--blue); }
+.auth-text span { font-size: 10px; color: var(--muted); display: block; margin-top: 2px; }
+.auth-btn { flex-shrink: 0; padding: 7px 14px; background: var(--blue); color: #0a0c0f; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; border: none; border-radius: 8px; cursor: pointer; }
+.auth-connected { background: var(--acc-bg); border-color: var(--acc-border); }
+.auth-connected .auth-text { color: var(--acc); }
+
+/* DAY STRIP */
+.strip { display: flex; gap: 6px; padding: 16px 18px 0; overflow-x: auto; scrollbar-width: none; }
+.strip::-webkit-scrollbar { display: none; }
+.dpill { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 9px 12px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--s1); cursor: pointer; min-width: 48px; }
+.dpill .dl { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.dpill .dd { width: 5px; height: 5px; border-radius: 50%; background: var(--muted2); }
+.dpill.active-alto { border-color: #3a5020; background: var(--acc-bg); }
+.dpill.active-alto .dl { color: var(--acc); } .dpill.active-alto .dd { background: var(--acc); }
+.dpill.active-moderado { border-color: #203060; background: #101828; }
+.dpill.active-moderado .dl { color: var(--blue); } .dpill.active-moderado .dd { background: var(--blue); }
+.dpill.active-bajo { border-color: #502010; background: #201410; }
+.dpill.active-bajo .dl { color: var(--orange); } .dpill.active-bajo .dd { background: var(--orange); }
+.dpill.active-rest { border-color: #303030; background: #181818; }
+.dpill.active-rest .dl { color: #888; } .dpill.active-rest .dd { background: #555; }
+
+/* MAIN CARD */
+.mcard { margin: 14px 18px 0; background: var(--s1); border: 1.5px solid var(--border); border-radius: 18px; overflow: hidden; }
+.mcard-hdr { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+.day-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; line-height: 1; color: var(--text); }
+.day-sub { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 300; }
+.type-chip { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 9px; border-radius: 20px; margin-top: 3px; flex-shrink: 0; }
+.chip-alto { background: var(--acc-bg); color: var(--acc); border: 1px solid var(--acc-border); }
+.chip-moderado { background: #101828; color: var(--blue); border: 1px solid #203060; }
+.chip-bajo { background: #201410; color: var(--orange); border: 1px solid #502010; }
+.chip-rest { background: var(--s2); color: var(--muted); border: 1px solid var(--border2); }
+.carb-row { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.carb-lbl { color: var(--muted); font-weight: 300; }
+.carb-val { color: var(--text); font-weight: 500; }
+.warmup { background: var(--s2); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 12px; font-size: 11px; color: var(--muted); line-height: 1.5; font-style: italic; }
+.warmup strong { color: #808898; font-style: normal; }
+.warmup-inside { margin: 12px 16px 0; }
+.warmup-cardio { margin-bottom: 12px; }
+.ex-section { padding: 0 16px 16px; }
+.sec-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); padding: 12px 0 8px; }
+.ex-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.ex-item:last-child { border-bottom: none; }
+.ex-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px; background: var(--s2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 11px; color: var(--muted); margin-top: 1px; }
+.ex-num.done { background: var(--acc-bg); border-color: var(--acc-border); color: var(--acc); }
+.ex-body { flex: 1; min-width: 0; }
+.ex-name { font-weight: 500; font-size: 14px; color: var(--text); }
+.ex-name.done { color: var(--muted); text-decoration: line-through; }
+.ex-sets { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 300; }
+.ex-detail { display: none; margin-top: 8px; background: var(--s2); border-radius: 9px; padding: 10px 11px; font-size: 11px; color: #8a94a6; line-height: 1.6; border: 1px solid var(--border); }
+.ex-item.exp .ex-detail { display: block; }
+.ex-check { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: transparent; margin-top: 2px; }
+.ex-check.done { background: var(--acc); border-color: var(--acc); color: var(--bg); }
+.cardio-wrap { padding: 16px; }
+.cardio-card { background: var(--s2); border: 1px solid var(--border2); border-radius: 14px; padding: 14px; }
+.cardio-title { font-weight: 500; font-size: 14px; margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-sm { background: var(--s1); border: 1px solid var(--border2); border-radius: 7px; padding: 5px 9px; font-size: 11px; color: #909aaa; }
+.rest-body { padding: 24px 16px; text-align: center; }
+.rest-icon { font-size: 40px; margin-bottom: 10px; }
+.rest-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+.rest-desc { font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 220px; margin: 0 auto; }
+.prog-wrap { margin: 10px 18px 0; background: var(--s1); border: 1.5px solid var(--border); border-radius: 13px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+.prog-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: var(--acc); flex-shrink: 0; }
+.prog-right { flex: 1; }
+.prog-lbl { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+.prog-bg { height: 5px; background: var(--s2); border-radius: 10px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--acc); border-radius: 10px; transition: width 0.3s ease; }
+.cardio-footer { margin: 10px 18px 0; background: var(--s1); border: 1px solid var(--border); border-radius: 13px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.cf-icon { font-size: 16px; flex-shrink: 0; }
+.cf-title { font-size: 13px; font-weight: 500; }
+.cf-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.info-bar { margin: 10px 18px 0; border-radius: 11px; padding: 9px 12px; font-size: 11px; line-height: 1.5; display: flex; gap: 7px; align-items: flex-start; }
+.ib-sleep { background: #131018; border: 1px solid #221c2e; color: #685880; }
+.ib-sleep strong { color: #8870a8; }
+.ib-rir { background: #131210; border: 1px solid #252010; color: #605830; }
+.sum-btn { display: block; margin: 12px 18px 0; width: calc(100% - 36px); padding: 13px; background: var(--acc); border: none; border-radius: 12px; color: var(--bg); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.06em; cursor: pointer; }
+.sum-btn.secondary { background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 12px; margin-top: 8px; }
+
+/* SUMMARY PAGE */
+.sum-hdr { padding: 20px 18px 0; display: flex; align-items: center; gap: 12px; }
+.back-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--s2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; color: var(--muted); flex-shrink: 0; }
+.sum-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; }
+.sum-body { padding: 16px 18px 120px; }
+.field-group { margin-bottom: 14px; }
+.field-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.field-input { width: 100%; background: var(--s2); border: 1.5px solid var(--border2); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; resize: none; -webkit-appearance: none; }
+.field-input:focus { border-color: var(--acc-dim); }
+.field-select { width: 100%; background: var(--s2); border: 1.5px solid var(--border2); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; -webkit-appearance: none; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23606876' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.field-select:focus { border-color: var(--acc-dim); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.hunger-btns { display: flex; gap: 8px; }
+.hbtn { flex: 1; padding: 9px; border-radius: 9px; border: 1.5px solid var(--border2); background: var(--s2); color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; text-align: center; }
+.hbtn.sel-no { border-color: var(--acc-border); background: var(--acc-bg); color: var(--acc); }
+.hbtn.sel-leve { border-color: #3a2808; background: #1a1408; color: #c87020; }
+.hbtn.sel-si { border-color: #502010; background: #201410; color: var(--orange); }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+.save-fixed { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 18px 24px; background: linear-gradient(to top, var(--bg) 70%, transparent); }
+.save-fixed button { width: 100%; padding: 14px; background: var(--acc); border: none; border-radius: 12px; color: var(--bg); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.08em; cursor: pointer; }
+.save-fixed button:disabled { opacity: 0.4; cursor: default; }
+
+/* SUCCESS */
+.success-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 24px; text-align: center; }
+.success-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--acc-bg); border: 2px solid var(--acc-border); display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; }
+.success-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; margin-bottom: 8px; }
+.success-sub { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 8px; }
+.success-path { font-size: 11px; color: var(--acc-dim); margin-bottom: 24px; background: var(--acc-bg); border: 1px solid var(--acc-border); padding: 8px 12px; border-radius: 8px; word-break: break-all; max-width: 100%; }
+.success-back { padding: 12px 32px; background: transparent; border: 1.5px solid var(--border2); border-radius: 12px; color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--s1); border: 1px solid var(--border2); border-radius: 10px; padding: 10px 16px; font-size: 12px; color: var(--text); opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; max-width: 90vw; white-space: normal; text-align: center; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- MAIN PAGE -->
+<div class="page active" id="mainPage">
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">Sistema Metabólico</div>
+      <div class="hdr-sub">Fase 1 — Entrenamiento</div>
+    </div>
+    <div class="badge" id="todayBadge">HOY</div>
+  </div>
+
+  <div class="auth-banner" id="authBanner">
+    <div class="auth-text">
+      Conectar con Google Drive
+      <span>Para guardar resúmenes automáticamente</span>
+    </div>
+    <button class="auth-btn" id="authBtn" onclick="signIn()">Conectar</button>
+  </div>
+
+  <div class="strip" id="dayStrip"></div>
+  <div id="dayView"></div>
+
+  <div class="info-bar ib-sleep" style="margin-top:12px">
+    <span style="flex-shrink:0">😴</span>
+    <span><strong>Regla sueño:</strong> 7–8h → normal · 6–6.5h → mantener · &lt;6h → reducir volumen</span>
+  </div>
+  <div id="rirBar" class="info-bar ib-rir" style="display:none">
+    <span>⚡ RIR objetivo: 1–2. No entrenes al fallo.</span>
+  </div>
+  <div id="progWrap" class="prog-wrap" style="display:none">
+    <div class="prog-num" id="progNum">0/0</div>
+    <div class="prog-right">
+      <div class="prog-lbl">Ejercicios completados</div>
+      <div class="prog-bg"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+  </div>
+  <button class="sum-btn" id="openSumBtn" onclick="goToSummary()">Llenar resumen del día →</button>
+  <button class="sum-btn secondary" id="resetBtn" style="display:none" onclick="resetDay()">Reiniciar progreso</button>
+</div>
+
+<!-- SUMMARY PAGE -->
+<div class="page" id="summaryPage">
+  <div class="sum-hdr">
+    <div class="back-btn" onclick="goToMain()">←</div>
+    <div class="sum-title" id="sumTitle">Resumen del día</div>
+  </div>
+  <div class="sum-body">
+    <div style="margin-top:8px">
+      <div class="field-lbl">Entrenamiento</div>
+      <div id="exSelFields"></div>
+      <div class="field-row" id="hardEasyRow">
+        <div>
+          <div class="field-lbl">Más difícil</div>
+          <select class="field-select" id="hardest" onchange="saveForm()"><option value="">Seleccionar</option></select>
+        </div>
+        <div>
+          <div class="field-lbl">Más fácil</div>
+          <select class="field-select" id="easiest" onchange="saveForm()"><option value="">Seleccionar</option></select>
+        </div>
+      </div>
+      <div class="field-row" id="rirPainRow">
+        <div>
+          <div class="field-lbl">RIR general</div>
+          <select class="field-select" id="rir" onchange="saveForm()">
+            <option value="">—</option><option>1</option><option>2</option><option>3</option><option>4</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-lbl">Molestias (0–10)</div>
+          <select class="field-select" id="pain" onchange="saveForm()">
+            <option value="">—</option><option>0 — ninguna</option><option>1</option><option>2</option>
+            <option>3</option><option>4</option><option>5</option><option>6+</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="field-lbl">Zona de molestia (si aplica)</div>
+        <input class="field-input" id="painZone" placeholder="ej. hombro derecho" oninput="saveForm()">
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="field-lbl">Nutrición</div>
+    <div class="field-group">
+      <div class="field-lbl">Desayuno</div>
+      <textarea class="field-input" id="breakfast" rows="2" placeholder="ej. 2 huevos + Canadian bacon + yogurt" oninput="saveForm()"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-lbl">Lunch</div>
+      <textarea class="field-input" id="lunch" rows="2" placeholder="ej. 250g pollo + 300g papa + ensalada" oninput="saveForm()"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-lbl">Cena</div>
+      <textarea class="field-input" id="dinner" rows="2" placeholder="ej. 5 oz pollo + ensalada del trabajo" oninput="saveForm()"></textarea>
+    </div>
+    <div class="divider"></div>
+    <div class="field-lbl">Bienestar</div>
+    <div class="field-row">
+      <div>
+        <div class="field-lbl">Agua total</div>
+        <select class="field-select" id="water" onchange="saveForm()">
+          <option value="">—</option><option>0.5 L</option><option>1.0 L</option><option>1.5 L</option>
+          <option>2.0 L</option><option>2.5 L</option><option>3.0 L</option><option>3.5 L</option>
+          <option>4.0 L</option><option>4.0+ L</option>
+        </select>
+      </div>
+      <div>
+        <div class="field-lbl">Estrés general</div>
+        <select class="field-select" id="stress" onchange="saveForm()">
+          <option value="">—</option><option>0</option><option>1</option><option>2</option><option>3</option>
+          <option>4</option><option>5</option><option>6</option><option>7</option><option>8</option>
+          <option>9</option><option>10</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-group" style="margin-top:4px">
+      <div class="field-lbl">Hambre nocturna</div>
+      <div class="hunger-btns">
+        <div class="hbtn" id="hNo" onclick="setHunger('no')">No</div>
+        <div class="hbtn" id="hLeve" onclick="setHunger('leve')">Leve</div>
+        <div class="hbtn" id="hSi" onclick="setHunger('si')">Sí</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="field-group">
+      <div class="field-lbl">Notas adicionales</div>
+      <textarea class="field-input" id="notes" rows="3" placeholder="Variaciones, sensaciones, observaciones..." oninput="saveForm()"></textarea>
+    </div>
+  </div>
+  <div class="save-fixed">
+    <button id="saveDriveBtn" onclick="saveToDrive()">Guardar en Google Drive</button>
+  </div>
+</div>
+
+<!-- SUCCESS PAGE -->
+<div class="page" id="successPage">
+  <div class="success-wrap">
+    <div class="success-icon">✓</div>
+    <div class="success-title" id="successTitle">¡Guardado en Drive!</div>
+    <div class="success-sub">Resumen creado en tu carpeta <strong>App tracking</strong>.</div>
+    <div class="success-path" id="successPath"></div>
+    <div class="success-sub" style="font-size:11px;margin-bottom:20px">
+      En el chat di <strong style="color:var(--text)">"Haz lectura final"</strong><br>y Claude lo leerá directo de tu Drive.
+    </div>
+    <button class="success-back" onclick="goToMain()">Volver al inicio</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+var CLIENT_ID = '1061925635685-7ei0ctb7gjjkgbjl3j1jf5u2pim37eou.apps.googleusercontent.com';
+var FOLDER_ID = '1EUQxNaGyJxKT1xCKs9ymnLmu_qGQE7xd';
+var SCOPE = 'https://www.googleapis.com/auth/drive.file';
+var accessToken = null;
+var tokenClient = null;
+
+var DAYS = [
+  {
+    key: 'LUN', name: 'Lunes', type: 'alto', typeLabel: 'Alto',
+    training: 'Lower Body', carb: '300 g papa', warmup: null,
+    exercises: [
+      { name: 'Squat', sets: '3 × 12', detail: 'Tempo 3s bajando, 1s en posición baja. Control total, rodillas alineadas con pies. RIR 1–2.' },
+      { name: 'Reverse Lunge', sets: '3 × 8 / pierna', detail: 'Paso atrás controlado. Rodilla delantera no pasa el pie. Alterna piernas o completa una antes de cambiar.' },
+      { name: 'Wall Sit', sets: '3 × 30 s', detail: 'Espalda plana en la pared, rodillas a 90°. Si sientes molestia en rodillas, sube ligeramente el ángulo.' },
+      { name: 'Glute Bridge', sets: '3 × 15', detail: 'Pausa 2s arriba apretando glúteos. Pies a ancho de cadera, espalda baja neutra.' },
+      { name: 'Plank', sets: '3 × 30 s', detail: 'Cuerpo recto de cabeza a talones. Activa el core, no dejes caer ni subir las caderas.' }
+    ],
+    cardio: { label: 'Caminata exterior', chips: [] }
+  },
+  {
+    key: 'MAR', name: 'Martes', type: 'moderado', typeLabel: 'Moderado',
+    training: 'Cardio Interior', carb: '150 g papa',
+    warmup: '5 min a 2.5 mph · inclinación 0–2% para activar. Luego sube a tu velocidad de trabajo.',
+    exercises: null,
+    cardio: { label: 'Caminadora', chips: ['30 min', 'Sueño 7h+: 3.2 mph · 4–6%', 'Sueño 6–6.5h: 2.8–3.0 mph · 3–4%', 'HR objetivo: 120–130 bpm'] }
+  },
+  {
+    key: 'MIÉ', name: 'Miércoles', type: 'rest', typeLabel: 'Bajo real',
+    training: 'Descanso activo', carb: '0 carbohidratos',
+    isRest: true, restIcon: '🌿', restDesc: 'Caminata suave exterior. Este día ayuda a la recuperación y al metabolismo. Sin presión.',
+    exercises: null, cardio: { label: 'Caminata exterior suave', chips: [] }
+  },
+  {
+    key: 'JUE', name: 'Jueves', type: 'alto', typeLabel: 'Alto',
+    training: 'Upper Body', carb: '75 g arroz o pasta',
+    warmup: 'Shoulder rolls · Neck mobility · Arm circles · Marcha ligera',
+    exercises: [
+      { name: 'Empuje isométrico en pared', sets: '3 × 20–30 s', detail: 'Intensidad ~7/10. Empuja como si quisieras mover la pared. Activa pecho, hombros y tríceps sin movimiento real.' },
+      { name: 'YTW en piso', sets: '3 × 8 / letra', detail: 'Boca abajo, brazos forman Y → T → W. Aprieta escápulas. Movimiento lento. Clave para salud del hombro.' },
+      { name: 'Push-up — Piso', sets: '2 × 6 reps', detail: 'Nivel actual: piso. Tempo 3s bajando, 1s abajo, empuja arriba. RIR 2–3. Si hombro llega a 3/10 → regresa al coffee table ese día. Con 2 semanas RIR 2+ sin molestias → sube a 3 × 8.' },
+      { name: 'Dead Bug', sets: '3 × 8 / lado', detail: 'Espalda baja pegada al suelo. Extiende brazo y pierna opuesta. Exhala al extender. Control total.' },
+      { name: 'Plank', sets: '3 × 30 s', detail: 'Cuerpo recto de cabeza a talones. Activa el core, no dejes caer ni subir las caderas.' }
+    ],
+    cardio: { label: 'Caminata exterior', chips: [] }
+  },
+  {
+    key: 'VIE', name: 'Viernes', type: 'bajo', typeLabel: 'Bajo',
+    training: 'Descanso activo', carb: '150 g papa',
+    isRest: true, restIcon: '🌤', restDesc: 'Caminata suave. Mantén hidratación y sueño como prioridad. Día de recuperación.',
+    exercises: null, cardio: { label: 'Caminata exterior suave', chips: [] }
+  },
+  {
+    key: 'SÁB', name: 'Sábado', type: 'alto', typeLabel: 'Alto',
+    training: 'Cardio Principal', carb: '350 g papa',
+    warmup: 'Caminadora: 5 min a 2.5 mph · inclinación 0–2% antes de subir. Pickleball: 3–5 min marcha ligera + arm circles + hip circles. Los primeros rallies suaves cuentan.',
+    exercises: null,
+    cardio: { label: 'Caminadora o Pickleball', chips: ['30–40 min', 'Sueño 7h+: 3.2 mph · 4–6%', 'Sueño 6–6.5h: 2.8–3.0 mph · 3–4%', 'Pickleball: HR ≥120 + 30 min'] }
+  },
+  {
+    key: 'DOM', name: 'Domingo', type: 'rest', typeLabel: 'Bajo real',
+    training: 'Descanso activo', carb: '0 carbohidratos',
+    isRest: true, restIcon: '🌙', restDesc: 'Descanso completo o caminata suave. Buen momento para preparar la semana y planear compras.',
+    exercises: null, cardio: { label: 'Caminata exterior suave', chips: [] }
+  }
+];
+
+function getTodayIdx() {
+  var d = new Date().getDay();
+  var map = { 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 0: 6 };
+  return map[d] !== undefined ? map[d] : 0;
+}
+
+var TODAY = getTodayIdx();
+var sel = TODAY;
+var done = {};
+var expanded = {};
+var formData = {};
+var hunger = {};
+var STORE_KEY = 'smb_v4';
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      var s = JSON.parse(raw);
+      done = s.done || {};
+      formData = s.formData || {};
+      hunger = s.hunger || {};
+      accessToken = s.token || null;
+    }
+  } catch (e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      done: done, formData: formData, hunger: hunger, token: accessToken
+    }));
+  } catch (e) {}
+}
+
+function getDateStr() {
+  var d = new Date();
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return d.getDate() + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+}
+
+function getDayKey() { return DAYS[sel].key + '_' + getDateStr(); }
+function getDocName() { return 'Resumen_' + DAYS[sel].name + '_' + getDateStr(); }
+
+// AUTH
+function initTokenClient() {
+  if (typeof google === 'undefined') {
+    setTimeout(initTokenClient, 500);
+    return;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPE,
+    callback: function(response) {
+      if (response.error) {
+        showToast('Error al conectar con Google. Intenta de nuevo.');
+        return;
+      }
+      accessToken = response.access_token;
+      saveState();
+      updateAuthUI(true);
+      showToast('¡Conectado con Google Drive!');
+    }
+  });
+}
+
+function signIn() {
+  if (!tokenClient) {
+    showToast('Cargando Google... intenta en un momento.');
+    initTokenClient();
+    return;
+  }
+  tokenClient.requestAccessToken({ prompt: '' });
+}
+
+function signOut() {
+  if (accessToken) {
+    google.accounts.oauth2.revoke(accessToken, function() {});
+  }
+  accessToken = null;
+  saveState();
+  updateAuthUI(false);
+  showToast('Desconectado de Google Drive.');
+}
+
+function updateAuthUI(connected) {
+  var banner = document.getElementById('authBanner');
+  var btn = document.getElementById('authBtn');
+  var text = banner.querySelector('.auth-text');
+  if (connected) {
+    banner.className = 'auth-banner auth-connected';
+    text.innerHTML = 'Google Drive conectado <span>Los resúmenes se guardan automáticamente</span>';
+    btn.textContent = 'Desconectar';
+    btn.onclick = signOut;
+  } else {
+    banner.className = 'auth-banner';
+    text.innerHTML = 'Conectar con Google Drive <span>Para guardar resúmenes automáticamente</span>';
+    btn.textContent = 'Conectar';
+    btn.onclick = signIn;
+  }
+}
+
+function showPage(id) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) {
+    pages[i].classList.remove('active');
+  }
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goToMain() { showPage('mainPage'); }
+function goToSummary() { buildForm(); showPage('summaryPage'); }
+
+function renderStrip() {
+  var strip = document.getElementById('dayStrip');
+  strip.innerHTML = '';
+  for (var i = 0; i < DAYS.length; i++) {
+    var d = DAYS[i];
+    var el = document.createElement('div');
+    el.className = 'dpill' + (i === sel ? ' active-' + d.type : '');
+    el.innerHTML = '<span class="dl">' + d.key + '</span><div class="dd"></div>';
+    (function(idx) { el.onclick = function() { sel = idx; render(); }; })(i);
+    strip.appendChild(el);
+  }
+  var pills = strip.querySelectorAll('.dpill');
+  if (pills[sel]) pills[sel].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function renderDay() {
+  var day = DAYS[sel];
+  var dk = getDayKey();
+  var doneEx = done[dk] || {};
+  var total = day.exercises ? day.exercises.length : 0;
+  var count = 0;
+  for (var k in doneEx) { if (doneEx[k]) count++; }
+
+  var badge = document.getElementById('todayBadge');
+  badge.textContent = sel === TODAY ? 'HOY' : day.key;
+  badge.className = sel === TODAY ? 'badge' : 'badge other';
+
+  document.getElementById('rirBar').style.display = day.exercises ? 'flex' : 'none';
+  document.getElementById('progWrap').style.display = day.exercises ? 'flex' : 'none';
+  document.getElementById('resetBtn').style.display = day.exercises ? 'block' : 'none';
+
+  if (day.exercises) {
+    document.getElementById('progNum').textContent = count + '/' + total;
+    var pct = total > 0 ? (count / total) * 100 : 0;
+    document.getElementById('progFill').style.width = pct + '%';
+  }
+
+  var html = '<div class="mcard">';
+  html += '<div class="mcard-hdr"><div>';
+  html += '<div class="day-name">' + day.name + '</div>';
+  html += '<div class="day-sub">' + day.training + '</div>';
+  html += '</div><div class="type-chip chip-' + day.type + '">' + day.typeLabel + '</div></div>';
+  html += '<div class="carb-row"><span class="carb-lbl">Carbohidratos:</span><span class="carb-val">' + day.carb + '</span></div>';
+
+  if (day.isRest) {
+    html += '<div class="rest-body">';
+    html += '<div class="rest-icon">' + day.restIcon + '</div>';
+    html += '<div class="rest-title">Descanso activo</div>';
+    html += '<div class="rest-desc">' + day.restDesc + '</div>';
+    html += '</div>';
+  } else if (!day.exercises) {
+    html += '<div class="cardio-wrap">';
+    if (day.warmup) {
+      html += '<div class="warmup warmup-cardio"><strong>🔥 Calentamiento:</strong> ' + day.warmup + '</div>';
+    }
+    html += '<div class="sec-lbl">Protocolo</div>';
+    html += '<div class="cardio-card"><div class="cardio-title">🏃 ' + day.cardio.label + '</div>';
+    html += '<div class="chips">';
+    for (var c = 0; c < day.cardio.chips.length; c++) {
+      html += '<div class="chip-sm">' + day.cardio.chips[c] + '</div>';
+    }
+    html += '</div></div></div>';
+  } else {
+    if (day.warmup) {
+      html += '<div class="warmup warmup-inside"><strong>🔥 Calentamiento:</strong> ' + day.warmup + '</div>';
+    }
+    html += '<div class="ex-section"><div class="sec-lbl">Ejercicios — toca para detalle, ✓ para marcar</div>';
+    for (var e = 0; e < day.exercises.length; e++) {
+      var ex = day.exercises[e];
+      var isDone = !!(doneEx[e]);
+      var isExp = !!expanded[sel + '-' + e];
+      html += '<div class="ex-item' + (isExp ? ' exp' : '') + '" data-i="' + e + '">';
+      html += '<div class="ex-num' + (isDone ? ' done' : '') + '">' + (e + 1) + '</div>';
+      html += '<div class="ex-body">';
+      html += '<div class="ex-name' + (isDone ? ' done' : '') + '">' + ex.name + '</div>';
+      html += '<div class="ex-sets">' + ex.sets + '</div>';
+      html += '<div class="ex-detail">' + ex.detail + '</div>';
+      html += '</div>';
+      html += '<div class="ex-check' + (isDone ? ' done' : '') + '" data-check="' + e + '">';
+      if (isDone) html += '&#10003;';
+      html += '</div></div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  if (day.exercises && day.cardio) {
+    html += '<div class="cardio-footer"><span class="cf-icon">🚶</span>';
+    html += '<div><div class="cf-title">' + day.cardio.label + '</div>';
+    html += '<div class="cf-sub">Al finalizar el entrenamiento</div></div></div>';
+  }
+
+  document.getElementById('dayView').innerHTML = html;
+
+  if (day.exercises) {
+    var items = document.querySelectorAll('.ex-item');
+    for (var j = 0; j < items.length; j++) {
+      (function(el) {
+        var idx = parseInt(el.getAttribute('data-i'));
+        el.addEventListener('click', function(evt) {
+          var check = el.querySelector('.ex-check');
+          var rect = check.getBoundingClientRect();
+          if (evt.clientX >= rect.left - 8) {
+            toggleDone(idx);
+          } else {
+            expanded[sel + '-' + idx] = !expanded[sel + '-' + idx];
+            renderDay();
+          }
+        });
+      })(items[j]);
+    }
+  }
+}
+
+function toggleDone(i) {
+  var dk = getDayKey();
+  if (!done[dk]) done[dk] = {};
+  done[dk][i] = !done[dk][i];
+  saveState();
+  renderDay();
+}
+
+function resetDay() {
+  var dk = getDayKey();
+  done[dk] = {};
+  saveState();
+  renderDay();
+}
+
+function render() { renderStrip(); renderDay(); }
+
+function buildForm() {
+  var day = DAYS[sel];
+  document.getElementById('sumTitle').textContent = 'Resumen — ' + day.name;
+  var fk = getDayKey();
+  var fd = formData[fk] || {};
+  var h = hunger[fk] || '';
+
+  var exNames = day.exercises ? day.exercises.map(function(x) { return x.name; }) : [];
+  var hardSel = document.getElementById('hardest');
+  var easySel = document.getElementById('easiest');
+  hardSel.innerHTML = '<option value="">Seleccionar</option>';
+  easySel.innerHTML = '<option value="">Seleccionar</option>';
+  for (var i = 0; i < exNames.length; i++) {
+    var n = exNames[i];
+    hardSel.innerHTML += '<option' + (fd.hardest === n ? ' selected' : '') + '>' + n + '</option>';
+    easySel.innerHTML += '<option' + (fd.easiest === n ? ' selected' : '') + '>' + n + '</option>';
+  }
+
+  var hasEx = !!day.exercises;
+  document.getElementById('exSelFields').innerHTML = hasEx ? '' :
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-style:italic">Día de cardio / descanso — sin ejercicios de fuerza.</div>';
+  document.getElementById('hardEasyRow').style.display = hasEx ? 'grid' : 'none';
+  document.getElementById('rirPainRow').style.display = hasEx ? 'grid' : 'none';
+
+  var fields = ['rir', 'pain', 'painZone', 'breakfast', 'lunch', 'dinner', 'water', 'stress', 'notes'];
+  for (var f = 0; f < fields.length; f++) {
+    var el = document.getElementById(fields[f]);
+    if (el) el.value = fd[fields[f]] || '';
+  }
+  setHungerUI(h);
+}
+
+function setHunger(v) {
+  var fk = getDayKey();
+  hunger[fk] = v;
+  setHungerUI(v);
+  saveState();
+}
+
+function setHungerUI(v) {
+  var opts = ['no', 'leve', 'si'];
+  for (var i = 0; i < opts.length; i++) {
+    var x = opts[i];
+    var el = document.getElementById('h' + x.charAt(0).toUpperCase() + x.slice(1));
+    if (el) el.className = 'hbtn' + (v === x ? ' sel-' + x : '');
+  }
+}
+
+function saveForm() {
+  var fk = getDayKey();
+  if (!formData[fk]) formData[fk] = {};
+  var f = formData[fk];
+  var fields = ['hardest', 'easiest', 'rir', 'pain', 'painZone', 'breakfast', 'lunch', 'dinner', 'water', 'stress', 'notes'];
+  for (var i = 0; i < fields.length; i++) {
+    var el = document.getElementById(fields[i]);
+    if (el) f[fields[i]] = el.value;
+  }
+  saveState();
+}
+
+function buildDocContent() {
+  var day = DAYS[sel];
+  var fk = getDayKey();
+  var fd = formData[fk] || {};
+  var h = hunger[fk] || '--';
+  var doneEx = done[fk] || {};
+  var exLines = '';
+  if (day.exercises) {
+    for (var i = 0; i < day.exercises.length; i++) {
+      exLines += '  ' + (doneEx[i] ? '[X]' : '[ ]') + ' ' + day.exercises[i].name + ' - ' + day.exercises[i].sets + '\n';
+    }
+  } else {
+    exLines = '  ' + (day.cardio ? day.cardio.label : 'Descanso activo') + '\n';
+  }
+  var L45 = '=============================================';
+  var L30 = '------------------------------';
+  var c = 'RESUMEN DEL DIA - ' + day.name.toUpperCase() + ' ' + getDateStr() + '\n';
+  c += 'Fase 1 - Sistema Metabolico\n' + L45 + '\n\n';
+  c += 'DIA: ' + day.name + ' | Tipo: ' + day.typeLabel + ' | Carbohidratos: ' + day.carb + '\n\n';
+  c += 'ENTRENAMIENTO\n' + L30 + '\n' + exLines + '\n';
+  c += 'Ejercicio mas dificil: ' + (fd.hardest || 'N/A') + '\n';
+  c += 'Ejercicio mas facil:   ' + (fd.easiest || 'N/A') + '\n';
+  c += 'RIR general:           ' + (fd.rir || 'N/A') + '\n';
+  c += 'Molestias (0-10):      ' + (fd.pain || 'N/A') + '\n';
+  c += 'Zona de molestia:      ' + (fd.painZone || 'N/A') + '\n\n';
+  c += 'NUTRICION\n' + L30 + '\n';
+  c += 'Desayuno: ' + (fd.breakfast || 'N/A') + '\n';
+  c += 'Lunch:    ' + (fd.lunch || 'N/A') + '\n';
+  c += 'Cena:     ' + (fd.dinner || 'N/A') + '\n\n';
+  c += 'BIENESTAR\n' + L30 + '\n';
+  c += 'Agua total:       ' + (fd.water || 'N/A') + '\n';
+  c += 'Estres (0-10):    ' + (fd.stress || 'N/A') + '\n';
+  c += 'Hambre nocturna:  ' + h + '\n\n';
+  c += 'NOTAS\n' + L30 + '\n' + (fd.notes || 'Sin notas adicionales.') + '\n\n';
+  c += L45 + '\nGenerado desde Sistema Metabolico App\n';
+  return c;
+}
+
+function saveToDrive() {
+  var btn = document.getElementById('saveDriveBtn');
+
+  if (!accessToken) {
+    showToast('Primero conecta tu Google Drive tocando el botón "Conectar" en la pantalla principal.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  var name = getDocName();
+  var content = buildDocContent();
+
+  var metadata = JSON.stringify({
+    name: name + '.txt',
+    mimeType: 'text/plain',
+    parents: [FOLDER_ID]
+  });
+
+  var boundary = 'smb_boundary_' + Date.now();
+  var body = '--' + boundary + '\r\n';
+  body += 'Content-Type: application/json; charset=UTF-8\r\n\r\n';
+  body += metadata + '\r\n';
+  body += '--' + boundary + '\r\n';
+  body += 'Content-Type: text/plain; charset=UTF-8\r\n\r\n';
+  body += content + '\r\n';
+  body += '--' + boundary + '--';
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart');
+  xhr.setRequestHeader('Authorization', 'Bearer ' + accessToken);
+  xhr.setRequestHeader('Content-Type', 'multipart/related; boundary=' + boundary);
+
+  xhr.onload = function() {
+    btn.disabled = false;
+    btn.textContent = 'Guardar en Google Drive';
+    if (xhr.status === 200 || xhr.status === 201) {
+      document.getElementById('successTitle').textContent = '¡Guardado en Drive!';
+      document.getElementById('successPath').textContent = name + '.txt';
+      showPage('successPage');
+    } else if (xhr.status === 401) {
+      accessToken = null;
+      saveState();
+      updateAuthUI(false);
+      showToast('Sesión expirada. Reconecta Google Drive y vuelve a intentarlo.');
+    } else {
+      showToast('Error al guardar (' + xhr.status + '). Intenta de nuevo.');
+    }
+  };
+
+  xhr.onerror = function() {
+    btn.disabled = false;
+    btn.textContent = 'Guardar en Google Drive';
+    showToast('Error de conexión. Verifica tu internet e intenta de nuevo.');
+  };
+
+  xhr.send(body);
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 4000);
+}
+
+// INIT
+loadState();
+render();
+updateAuthUI(!!accessToken);
+window.addEventListener('load', function() {
+  setTimeout(initTokenClient, 1000);
+});
+</script>
+</body>
+</html>
